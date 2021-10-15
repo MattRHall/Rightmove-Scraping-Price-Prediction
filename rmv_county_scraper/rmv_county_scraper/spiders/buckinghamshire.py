@@ -40,7 +40,7 @@ class BuckinghamshireSpider(scrapy.Spider):
         property_urls = response.xpath('//div[@class="propertyCard-description"]//a[@class="propertyCard-link"]/@href').extract()
         for property_url in property_urls:
             if property_url != '':
-                yield scrapy.Follow(property_url, self.one_house)
+                yield response.follow(property_url, self.one_house)
 
 
     def one_house(self, response):
@@ -65,7 +65,7 @@ class BuckinghamshireSpider(scrapy.Spider):
         analytics_ea = re.findall(r'(?<="analyticsBranch":).*?(?=,"analyticsProperty")', str(script_all))
         analytics_ea = json.loads(analytics_ea[0])
 
-        branchID = analytics_ea.get("branchID", None)
+        branchId = analytics_ea.get("branchId", None)
         brandName= analytics_ea.get("brandName", None)
         branchName = analytics_ea.get("branchName", None)
         companyName = analytics_ea.get("companyName", None)
@@ -74,19 +74,28 @@ class BuckinghamshireSpider(scrapy.Spider):
 
         analytics_station = re.findall(r'(?<="nearestStations":\[).*?(?=],"showSchoolInfo")', str(script_all))
         analytics_station = re.findall(r'(?<="distance":)[.0-9]+(?=\,)', analytics_station[0])
-        distances = re.findall(r'(?<="distance":)[.0-9]+(?=\,)', analytics_station[0])
-        if distances:
-            closest_train = distances[0]
+        if analytics_station:
+            closest_train = float(analytics_station[0])
         else:
             closest_train = None
 
         key_features = re.findall(r'(?<="keyFeatures":\[).*?(?=])', str(script_all))
         key_features = (" ").join(key_features).lower()
-        for feature in ["garage", "garden", "parking", "pool"]:
-            if feature in key_features:
-                exec("%s = %d" % (feature,1))
-            else:
-                exec("%s = %d" % (feature,0))
+        garage = garden = parking = pool = 0
+        if "garage" in key_features:
+            garage = 1
+        if "garden" in key_features:
+            garden = 1
+        if "parking" in key_features:
+            parking = 1
+        if "pool" in key_features:
+            pool = 1
+
+        bathrooms = re.findall(r'(?<="bathrooms":).*?(?=,)', str(script_all))
+        if bathrooms:
+            bathrooms = int(bathrooms[0])
+        else:
+            bathrooms = 0
 
         yield {"propertyId":propertyId,
                 "propertySubType":propertySubType,
@@ -97,9 +106,10 @@ class BuckinghamshireSpider(scrapy.Spider):
                 "latitude": latitude,
                 "longitude": longitude,
                 "beds": beds,
+                "bathrooms": bathrooms,
                 "added": added,
                 "price": price,
-                "branchID": branchID,
+                "branchID": branchId,
                 "brandName": brandName,
                 "branchName": branchName,
                 "companyName": companyName,
