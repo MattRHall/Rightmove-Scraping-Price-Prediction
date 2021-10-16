@@ -10,13 +10,14 @@ class BuckinghamshireSpider(scrapy.Spider):
     start_urls = ['https://www.rightmove.co.uk/estate-agents/Buckinghamshire.html?branchType=SALES&page=1']
 
     def __init__(self):
-        self.mydb = mysql.connector.connect(host='localhost', user='hall_m', password='matt1337', database='rightmove')
+        """ Connects to local MySQL server """
+
+        self.mydb = mysql.connector.connect(host='localhost', user='hall_m', password='***', database='rightmove')
         self.mycursor = self.mydb.cursor(buffered=True)
 
         self.mycursor.execute("SHOW TABLES")
-        #assert("buckinghamshire" in self.mycursor)
-
         self.mycursor.execute("TRUNCATE TABLE `buckinghamshire`")
+
 
     def parse(self, response):
         """ Loops through the number of pages of estate agents """
@@ -25,6 +26,7 @@ class BuckinghamshireSpider(scrapy.Spider):
         for page_num in range(1, int(pages)+1):
             ea_results_url = "https://www.rightmove.co.uk/estate-agents/Buckinghamshire.html?branchType=SALES&page=" + str(page_num)
             yield scrapy.Request(ea_results_url, callback=self.all_ea_all_pages)
+
 
     def all_ea_all_pages(self,response):
         """ Single results page, collects urls of all estate agents on page from branch id"""
@@ -37,7 +39,10 @@ class BuckinghamshireSpider(scrapy.Spider):
                 full_url = partial_url + str(ea_id)
                 yield scrapy.Request(full_url, callback=self.one_ea_all_pages, meta={"ea_id":ea_id})
 
+
     def one_ea_all_pages(self, response):
+        """ Single estate agent, with all their pages containing all their properties """
+
         ea_id = response.meta["ea_id"]
         num_properties = response.xpath('//span[@class="searchHeader-resultCount"]/text()').extract()
         if num_properties[0] != '0':
@@ -46,13 +51,18 @@ class BuckinghamshireSpider(scrapy.Spider):
                 full_url = "https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=BRANCH%5E"+str(ea_id) + "&index=" + str(page_idx) + "&includeSSTC=true"
                 yield scrapy.Request(full_url, self.one_ea_one_page)
 
+
     def one_ea_one_page(self, response):
+        """ A single page from a single estate agent """
+
         property_urls = response.xpath('//div[@class="propertyCard-description"]//a[@class="propertyCard-link"]/@href').extract()
         for property_url in property_urls:
             if property_url != '':
                 yield response.follow(property_url, self.one_house)
 
     def one_house(self, response):
+        """ A single house, all data collected here and passed through to MySQL server """
+
         script_all = response.xpath('//script').extract()
         script_all = [i for i in script_all if "window.PAGE_MODEL" in i[0:30]]
 
