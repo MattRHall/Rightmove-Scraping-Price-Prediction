@@ -1,12 +1,22 @@
 import scrapy
 import re
 import json
-
+from scrapy.crawler import CrawlerProcess
+import mysql.connector
 
 class BuckinghamshireSpider(scrapy.Spider):
     name = 'buckinghamshire'
     allowed_domains = ['rightmove.co.uk']
     start_urls = ['https://www.rightmove.co.uk/estate-agents/Buckinghamshire.html?branchType=SALES&page=1']
+
+    def __init__(self):
+        self.mydb = mysql.connector.connect(host='localhost', user='hall_m', password='matt1337', database='rightmove')
+        self.mycursor = self.mydb.cursor(buffered=True)
+
+        self.mycursor.execute("SHOW TABLES")
+        #assert("buckinghamshire" in self.mycursor)
+
+        self.mycursor.execute("TRUNCATE TABLE `buckinghamshire`")
 
     def parse(self, response):
         """ Loops through the number of pages of estate agents """
@@ -42,14 +52,13 @@ class BuckinghamshireSpider(scrapy.Spider):
             if property_url != '':
                 yield response.follow(property_url, self.one_house)
 
-
     def one_house(self, response):
         script_all = response.xpath('//script').extract()
         script_all = [i for i in script_all if "window.PAGE_MODEL" in i[0:30]]
 
         analytics_house = re.findall(r'(?<="analyticsProperty":).*?(?=}}})', str(script_all))
         analytics_house = json.loads(analytics_house[0] + "}")
-
+   
         propertyId = analytics_house.get("propertyId", None)
         propertySubType = analytics_house.get("propertySubType", None)
         propertyType = analytics_house.get("propertyType", None)
@@ -60,7 +69,7 @@ class BuckinghamshireSpider(scrapy.Spider):
         longitude = analytics_house.get("longitude", None)
         beds = analytics_house.get("beds", None)
         added = analytics_house.get("added", None)
-        price = analytics_house.get("added", None)
+        price = analytics_house.get("price", None)
 
         analytics_ea = re.findall(r'(?<="analyticsBranch":).*?(?=,"analyticsProperty")', str(script_all))
         analytics_ea = json.loads(analytics_ea[0])
@@ -92,38 +101,30 @@ class BuckinghamshireSpider(scrapy.Spider):
             pool = 1
 
         bathrooms = re.findall(r'(?<="bathrooms":).*?(?=,)', str(script_all))
-        if bathrooms:
+        try: 
             bathrooms = int(bathrooms[0])
-        else:
+        except:
             bathrooms = 0
 
-        yield {"propertyId":propertyId,
-                "propertySubType":propertySubType,
-                "propertyType":propertyType,
-                "retirement": retirement,
-                "soldSTC": soldSTC,
-                "preOwned": preOwned,
-                "latitude": latitude,
-                "longitude": longitude,
-                "beds": beds,
-                "bathrooms": bathrooms,
-                "added": added,
-                "price": price,
-                "branchID": branchId,
-                "brandName": brandName,
-                "branchName": branchName,
-                "companyName": companyName,
-                "companyTradingName": companyTradingName,
-                "pageType": pageType,
-                "closest_train": closest_train,
-                "garage": garage,
-                "garden": garden,
-                "parking": parking,
-                "pool": pool
-                }
+        sql = "INSERT INTO `rightmove`.`buckinghamshire` \
+             (propertyId, propertySubType, propertyType, retirement, soldSTC, \
+                preOwned, latitude, longitude, beds, bathrooms, added, price, \
+                branchId, brandName, branchName, companyName, companyTradingName, \
+                pageType, closest_train, garage, garden, parking, pool) VALUES \
+                (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
 
+        val = (propertyId, propertySubType, propertyType, retirement, soldSTC, preOwned,
+               float(latitude), float(longitude), int(beds), int(bathrooms), int(added), 
+               price, int(branchId), brandName, branchName, companyName, companyTradingName, 
+               pageType, float(closest_train), int(garage), int(garden), int(parking), int(pool))
+                
+        self.mycursor.execute(sql, val)
+        self.mydb.commit()
 
-
+if __name__ == "__main__":
+    process = CrawlerProcess()
+    process.crawl(BuckinghamshireSpider)
+    process.start()
 
 
 

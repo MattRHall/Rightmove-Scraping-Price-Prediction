@@ -17,7 +17,7 @@ NEWSPIDER_MODULE = 'rmv_county_scraper.spiders'
 #USER_AGENT = 'rmv_county_scraper (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 16
@@ -50,9 +50,39 @@ COOKIES_ENABLED = False
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
+DOWNLOADER_MIDDLEWARES = {
+'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+'scrapy_useragents.downloadermiddlewares.useragents.UserAgentsMiddleware': 500,
 #    'rmv_county_scraper.middlewares.RmvCountyScraperDownloaderMiddleware': 543,
-#}
+}
+
+USER_AGENTS = [
+('Mozilla/5.0 (X11; Linux x86_64) '
+'AppleWebKit/537.36 (KHTML, like Gecko) '
+'Chrome/57.0.2987.110 '
+'Safari/537.36'),  # chrome
+('Mozilla/5.0 (X11; Linux x86_64) '
+'AppleWebKit/537.36 (KHTML, like Gecko) '
+'Chrome/61.0.3163.79 '
+'Safari/537.36'),  # chrome
+('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) '
+'Gecko/20100101 '
+'Firefox/55.0'),  # firefox
+('Mozilla/5.0 (X11; Linux x86_64) '
+'AppleWebKit/537.36 (KHTML, like Gecko) '
+'Chrome/61.0.3163.91 '
+'Safari/537.36'),  # chrome
+('Mozilla/5.0 (X11; Linux x86_64) '
+'AppleWebKit/537.36 (KHTML, like Gecko) '
+'Chrome/62.0.3202.89 '
+'Safari/537.36'),  # chrome
+('Mozilla/5.0 (X11; Linux x86_64) '
+'AppleWebKit/537.36 (KHTML, like Gecko) '
+'Chrome/63.0.3239.108 '
+'Safari/537.36'),
+('Mozilla/5.0 (X11; CrOS x86_64 13597.94.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.186 Safari/537.36'),
+('Mozilla/5.0 (X11; CrOS x86_64 13597.105.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.208 Safari/537.36') 
+]
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
