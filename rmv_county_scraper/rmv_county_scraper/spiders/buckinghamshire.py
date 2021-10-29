@@ -48,7 +48,7 @@ class BuckinghamshireSpider(scrapy.Spider):
         if num_properties[0] != '0':
             page_idxs = [24*i for i in range(20) if 24*i<int(num_properties[0])]
             for page_idx in page_idxs:
-                full_url = "https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=BRANCH%5E"+str(ea_id) + "&index=" + str(page_idx) + "&includeSSTC=true"
+                full_url = "https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=BRANCH%5E"+str(ea_id) + "&index=" + str(page_idx) + "&includeSSTC=true" + "&sortType=6"
                 yield scrapy.Request(full_url, self.one_ea_one_page)
 
 
@@ -64,7 +64,7 @@ class BuckinghamshireSpider(scrapy.Spider):
         """ A single house, all data collected here and passed through to MySQL server """
 
         script_all = response.xpath('//script').extract()
-        script_all = [i for i in script_all if "window.PAGE_MODEL" in i[0:30]]
+        #script_all = [i for i in script_all if "window.PAGE_MODEL" in i[0:30]]
 
         analytics_house = re.findall(r'(?<="analyticsProperty":).*?(?=}}})', str(script_all))
         analytics_house = json.loads(analytics_house[0] + "}")
