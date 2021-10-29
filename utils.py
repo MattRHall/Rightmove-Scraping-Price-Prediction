@@ -48,3 +48,15 @@ class data_visualizer():
         if save_fig:
             plt.savefig("feature_analysis.png")
         plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
